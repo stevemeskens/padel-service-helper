@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Padel Service Helper</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffffff"/>
+    <style>
+        body{font-family:system-ui,Arial,sans-serif;margin:0;padding:24px;}
+        .card{max-width:520px; margin:0 auto; border:1px solid #ddd; border-radius:16px; padding:16px;}
+        h1 {font-size:20px; margin:0 0 12 px;}
+        .big{font-size:44px; font-weight:800; margin:18px 0;}
+        .muted{color:#666; font-size:14px;}
+        .row{display:flex; gap:12px; margin-top:16px}
+        button{flex:1; padding:18px 14px; font-size: 18px; border-radius:14px; border:1px solid #ccc; background: #f7f7f7;}
+        button:active{transform: scale(0.99);}
+    </style>
+
+</head>
+<body>
+    <div  class="card">
+<h1>Padel Service Helper</h1>
+<div class="muted">1 tick per point. Always start serve on the right side</div>
+<div class="big" id="side">Serve: Right</div>
+<div class="muted" id="pts">Points in this game: 0</div>
+
+<div class="row">
+<button id="add">Point (+1)</button>
+<button id="reset">Reset</button>
+</div>
+</div>
+<script>
+let pointsThisGame = 0;
+function render(){
+    const side = (pointsThisGame % 2 === 0) ? 'Right' : 'Left';
+    document.getElementById('side').textContent = `Serve: ${side}`;
+    document.getElementById('pts').textContent = `Points in this game: ${pointsThisGame}`;
+}
+
+document.getElementById('add').addEventListener('click', () => {
+    pointsThisGame+=1;
+    render();
+});
+
+document.getElementById('reset').addEventListener('click', () => {
+    pointsThisGame = 0;
+    render();
+});
+if("serviceWorker" in navigator) {
+    window.addEventListener("load",()=>{
+        navigator.serviceWorker.register("sw.js");
+    });
+}
+render();
+
+</script>
+
+    </div>
+</body>
+</html>
