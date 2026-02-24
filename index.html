@@ -1,62 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Padel Service Helper</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#ffffff"/>
-    <style>
-        body{font-family:system-ui,Arial,sans-serif;margin:0;padding:24px;}
-        .card{max-width:520px; margin:0 auto; border:1px solid #ddd; border-radius:16px; padding:16px;}
-        h1 {font-size:20px; margin:0 0 12 px;}
-        .big{font-size:44px; font-weight:800; margin:18px 0;}
-        .muted{color:#666; font-size:14px;}
-        .row{display:flex; gap:12px; margin-top:16px}
-        button{flex:1; padding:18px 14px; font-size: 18px; border-radius:14px; border:1px solid #ccc; background: #f7f7f7;}
-        button:active{transform: scale(0.99);}
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Padel Service Helper</title>
 
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#ffffff" />
+
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 0; padding: 24px; background: #f9f9f9; }
+    .card { max-width: 520px; margin: 0 auto; border: 1px solid #ddd; border-radius: 16px; padding: 24px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h1 { font-size: 24px; margin: 0 0 8px; font-weight: 700; }
+    .subtitle { color: #666; font-size: 14px; margin-bottom: 20px; }
+    .sets-display { display: flex; justify-content: space-around; margin-bottom: 24px; text-align: center; }
+    .set-box { flex: 1; }
+    .set-box .label { color: #999; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .set-box .sets { font-size: 32px; font-weight: 800; margin: 8px 0; }
+    .big { font-size: 44px; font-weight: 800; margin: 20px 0; text-align: center; }
+    .serve-info { text-align: center; color: #666; font-size: 16px; margin: 16px 0; font-weight: 600; }
+    .muted { color: #666; font-size: 14px; text-align: center; }
+    .row { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+    button { flex: 1; padding: 16px 14px; font-size: 16px; border-radius: 10px; border: 1px solid #ddd; background: #f0f0f0; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    button:hover { background: #e0e0e0; }
+    button:active { transform: scale(0.98); }
+    button.danger { background: #ffebee; color: #c62828; border-color: #ef5350; }
+    button.danger:hover { background: #ffcdd2; }
+  </style>
 </head>
+
 <body>
-    <div  class="card">
-<h1>Padel Service Helper</h1>
-<div class="muted">1 tick per point. Always start serve on the right side</div>
-<div class="big" id="side">Serve: Right</div>
-<div class="muted" id="pts">Points in this game: 0</div>
+  <div class="card">
+    <h1>Padel Score Tracker</h1>
+    <div class="subtitle">Track sets, games, and serve positions</div>
 
-<div class="row">
-<button id="add">Point (+1)</button>
-<button id="reset">Reset</button>
-</div>
-</div>
-<script>
-let pointsThisGame = 0;
-function render(){
-    const side = (pointsThisGame % 2 === 0) ? 'Right' : 'Left';
-    document.getElementById('side').textContent = `Serve: ${side}`;
-    document.getElementById('pts').textContent = `Points in this game: ${pointsThisGame}`;
-}
-
-document.getElementById('add').addEventListener('click', () => {
-    pointsThisGame+=1;
-    render();
-});
-
-document.getElementById('reset').addEventListener('click', () => {
-    pointsThisGame = 0;
-    render();
-});
-if("serviceWorker" in navigator) {
-    window.addEventListener("load",()=>{
-        navigator.serviceWorker.register("sw.js");
-    });
-}
-render();
-
-</script>
-
+    <!-- Sets display -->
+    <div class="sets-display">
+      <div class="set-box">
+        <div class="label">Team A Sets</div>
+        <div class="sets" id="setsA">0</div>
+      </div>
+      <div class="set-box">
+        <div class="label">Team B Sets</div>
+        <div class="sets" id="setsB">0</div>
+      </div>
     </div>
+
+    <!-- Current game score -->
+    <div class="big" id="score">0–0</div>
+    
+    <!-- Serve position -->
+    <div class="serve-info" id="side">Right</div>
+    <div class="muted" id="pts">Total points: 0</div>
+
+    <!-- Buttons -->
+    <div class="row">
+      <button id="a" style="background: #bbdefb; border-color: #2196F3; font-weight: 700;">Team A</button>
+      <button id="b" style="background: #ffccbc; border-color: #FF6F00; font-weight: 700;">Team B</button>
+    </div>
+    
+    <div class="row">
+      <button id="reset">Reset Game</button>
+      <button id="newmatch" class="danger">New Match</button>
+    </div>
+  </div>
+
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Match tracking
+  let setsA = 0;
+  let setsB = 0;
+
+  // Current game points (0..4)
+  let a = 0;
+  let b = 0;
+
+  const mapScore = (p) => (p === 0 ? "0" : p === 1 ? "15" : p === 2 ? "30" : "40");
+  const isGoldenPoint = () => a === 3 && b === 3;
+
+  function render() {
+    // Update sets display
+    document.getElementById("setsA").textContent = setsA;
+    document.getElementById("setsB").textContent = setsB;
+
+    // Update current game score
+    const scoreText = isGoldenPoint()
+      ? "40–40 (Golden Point)"
+      : `${mapScore(a)}–${mapScore(b)}`;
+    document.getElementById("score").textContent = scoreText;
+
+    // Update serve position (alternates after each point)
+    const totalPoints = a + b;
+    const side = (totalPoints % 2 === 0) ? "Right" : "Left";
+    document.getElementById("side").textContent = `Serve: ${side}`;
+
+    // Debug info
+    document.getElementById("pts").textContent = `Game: ${a}–${b} | Total points in game: ${totalPoints}`;
+  }
+
+  function endGame(winner) {
+    // Award the set to the winner
+    if (winner === "A") setsA++;
+    else setsB++;
+
+    // Reset points for next game
+    a = 0;
+    b = 0;
+    render();
+  }
+
+  function pointTo(team) {
+    if (team === "A") a++; else b++;
+
+    // Golden point: after 40–40 (3–3), next point wins (4–3)
+    if ((a === 4 && b === 3)) return endGame("A");
+    if ((b === 4 && a === 3)) return endGame("B");
+
+    // Normal win before 40–40: 4–0, 4–1, 4–2
+    if (a === 4 && b <= 2) return endGame("A");
+    if (b === 4 && a <= 2) return endGame("B");
+
+    render();
+  }
+
+  // Wire buttons AFTER variables exist
+  document.getElementById("a").addEventListener("click", () => pointTo("A"));
+  document.getElementById("b").addEventListener("click", () => pointTo("B"));
+  document.getElementById("reset").addEventListener("click", () => { a = 0; b = 0; render(); });
+  document.getElementById("newmatch").addEventListener("click", () => { a = 0; b = 0; setsA = 0; setsB = 0; render(); });
+
+  // Service worker
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
+  }
+
+  render();
+});
+</script>
 </body>
 </html>
