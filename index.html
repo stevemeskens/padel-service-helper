@@ -34,7 +34,7 @@
     <h1>Padel Score Tracker</h1>
     <div class="subtitle">Track sets, games, and serve positions</div>
 
-    <!-- Sets display -->
+    <!-- Match display (Sets) -->
     <div class="sets-display">
       <div class="set-box">
         <div class="label">Team A Sets</div>
@@ -46,7 +46,19 @@
       </div>
     </div>
 
-    <!-- Current game score -->
+    <!-- Games in current set display -->
+    <div class="sets-display" style="margin-bottom: 12px;">
+      <div class="set-box">
+        <div class="label" style="font-size: 11px;">Team A Games</div>
+        <div class="sets" id="gamesA" style="font-size: 28px;">0</div>
+      </div>
+      <div class="set-box">
+        <div class="label" style="font-size: 11px;">Team B Games</div>
+        <div class="sets" id="gamesB" style="font-size: 28px;">0</div>
+      </div>
+    </div>
+
+    <!-- Current game score (points) -->
     <div class="big" id="score">0–0</div>
     
     <!-- Serve position -->
@@ -67,9 +79,13 @@
 
   <script>
 document.addEventListener("DOMContentLoaded", () => {
-  // Match tracking
+  // Match tracking (sets won)
   let setsA = 0;
   let setsB = 0;
+
+  // Current set tracking (games won per set)
+  let gamesA = 0;
+  let gamesB = 0;
 
   // Current game points (0..4)
   let a = 0;
@@ -79,11 +95,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const isGoldenPoint = () => a === 3 && b === 3;
 
   function render() {
-    // Update sets display
+    // Update sets display (match score)
     document.getElementById("setsA").textContent = setsA;
     document.getElementById("setsB").textContent = setsB;
 
-    // Update current game score
+    // Update games display (current set score)
+    document.getElementById("gamesA").textContent = gamesA;
+    document.getElementById("gamesB").textContent = gamesB;
+
+    // Update current game score (points)
     const scoreText = isGoldenPoint()
       ? "40–40 (Golden Point)"
       : `${mapScore(a)}–${mapScore(b)}`;
@@ -95,15 +115,32 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("side").textContent = `Serve: ${side}`;
 
     // Debug info
-    document.getElementById("pts").textContent = `Game: ${a}–${b} | Total points in game: ${totalPoints}`;
+    document.getElementById("pts").textContent = `Points in game: ${a}–${b} | Total points: ${totalPoints}`;
   }
 
   function endGame(winner) {
+    // Award the game to the winner
+    if (winner === "A") gamesA++;
+    else gamesB++;
+
+    // Check if someone won the set (9 games)
+    if (gamesA === 9) return endSet("A");
+    if (gamesB === 9) return endSet("B");
+
+    // Reset points for next game
+    a = 0;
+    b = 0;
+    render();
+  }
+
+  function endSet(winner) {
     // Award the set to the winner
     if (winner === "A") setsA++;
     else setsB++;
 
-    // Reset points for next game
+    // Reset games for next set
+    gamesA = 0;
+    gamesB = 0;
     a = 0;
     b = 0;
     render();
@@ -127,7 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("a").addEventListener("click", () => pointTo("A"));
   document.getElementById("b").addEventListener("click", () => pointTo("B"));
   document.getElementById("reset").addEventListener("click", () => { a = 0; b = 0; render(); });
-  document.getElementById("newmatch").addEventListener("click", () => { a = 0; b = 0; setsA = 0; setsB = 0; render(); });
+  document.getElementById("newmatch").addEventListener("click", () => { a = 0; b = 0; gamesA = 0; gamesB = 0; setsA = 0; setsB = 0; render(); });
 
   // Service worker
   if ("serviceWorker" in navigator) {
